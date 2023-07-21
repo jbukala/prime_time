@@ -44,7 +44,7 @@ def cache_factorization(cache_file_path: Path) -> None:
     factors.to_csv(cache_file_path, index=False)
     return
 
-def polar_plot(time_decomp: pd.DataFrame, output_file: Path):
+def polar_plot(time_decomp: pd.DataFrame, output_file: Path, time_str: str):
     """Generate a polar plot of the time decomposition and save it as PNG
 
     Args:
@@ -52,8 +52,22 @@ def polar_plot(time_decomp: pd.DataFrame, output_file: Path):
         output_file (Path): File to save polar plot to
     """
     num_prime_factors = len(potential_factors)
-    theta = (2 * np.pi) * np.linspace(0,  1, num_prime_factors, endpoint=False) # Distribute theta evenly over all prime factors
+    theta = (2 * np.pi) * np.linspace(1 + 0.25,  0.25, num_prime_factors, endpoint=False) # Distribute theta evenly over all prime factors, and start from top of circle clockwise
     # if all
+
+    def num_wrap(num: float, r_min: float, r_max: float) -> float:
+        """"Make sure a given number is within range [r_min, r_max] by making it wrap around"""
+        range_len = r_max -r_min
+        if num<r_min:
+            add_factors = np.ceil((r_min - num)/range_len)
+            return num + range_len * add_factors
+        elif num>r_max:
+            sub_factors = np.ceil((num - r_max)/range_len)
+            return num - range_len * sub_factors
+        else:
+            return num
+    theta = [num_wrap(n, 0, 2*np.pi) for n in theta]
+
     r_hours = time_decomp.iloc[0].to_numpy()
     r_minutes = time_decomp.iloc[1].to_numpy()
     r_seconds = time_decomp.iloc[2].to_numpy()
@@ -61,19 +75,21 @@ def polar_plot(time_decomp: pd.DataFrame, output_file: Path):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 
     widths = [(2 * np.pi)/num_prime_factors] * num_prime_factors
-    ax.bar(theta, r_hours, width=widths, bottom=0.0, color='red', alpha=0.5, label='hours')
-    ax.bar(theta, r_minutes, width=widths, bottom=0.0, color='blue', alpha=0.5, label='minutes')
-    ax.bar(theta, r_seconds, width=widths, bottom=0.0, color='yellow', alpha=0.5, label='seconds')
+    ax.bar(theta, r_hours, width=widths, bottom=0.0, color='red', alpha=0.5, label='hours', edgecolor='k')
+    ax.bar(theta, r_minutes, width=widths, bottom=0.0, color='blue', alpha=0.5, label='minutes', edgecolor='k')
+    ax.bar(theta, r_seconds, width=widths, bottom=0.0, color='green', alpha=0.5, label='seconds', edgecolor='k')
 
     #ax.set_ylim([0,3])
     ax.set_rticks([1, 2, 3, 4, 5])  # Less radial ticks
+    ax.set_rlim(bottom=5, top=0)
+
     ax.set_xticks(theta)
     ax.set_xticklabels([str(f) for f in potential_factors])
     #ax.set_rlabel_position(-22.5)  # Move radial labels away from plotted line
     #ax.grid(True)
-    ax.set_title("Prime number decomposition plot", va='bottom')
+    ax.set_title(f"Prime number decomposition plot at {time_str}", va='bottom')
     legend_angle = np.deg2rad(67.5)
-    ax.legend(loc="lower left", bbox_to_anchor=(.8 + np.cos(legend_angle)/2, .5 + np.sin(legend_angle)/2))
+    ax.legend(loc="upper left", bbox_to_anchor=(.8 + np.cos(legend_angle)/2, .5 + np.sin(legend_angle)/2))
     plt.savefig(output_file)
 
     logging.info("Saved output plot to file")
@@ -113,13 +129,14 @@ def cli(hours: int, minutes: int, seconds: int, image: Path):
     hours = 24 if hours==0 else hours
     minutes = 60 if minutes==0 else minutes
     seconds = 60 if seconds==0 else seconds
+    time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-    logging.info(f"Decomposing time {hours:02d}:{minutes:02d}:{seconds:02d}")
+    logging.info(f"Decomposing time {time_str}")
     prime_time = decomp_lookup.iloc[[hours, minutes, seconds]] #lookup prime decompositions of H:M:S
     print(f"Prime Time:\n{prime_time}")
 
     logging.info("Making time polar plot")
-    polar_plot(time_decomp=prime_time, output_file=image)
+    polar_plot(time_decomp=prime_time, output_file=image, time_str=time_str)
     return
 
 

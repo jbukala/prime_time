@@ -79,6 +79,9 @@ def polar_plot(time_decomp: pd.DataFrame, output_file: Path, time_str: str):
     ax.bar(theta, r_minutes, width=widths, bottom=0.0, color='blue', alpha=0.5, label='minutes', edgecolor='k')
     ax.bar(theta, r_seconds, width=widths, bottom=0.0, color='green', alpha=0.5, label='seconds', edgecolor='k')
 
+    # To plot approximate unused space in black
+    #ax.fill_between(np.linspace(np.pi/2, 2* np.pi + np.pi/2, 100), np.linspace(1, 5, 100), [5] * 100, color='black')
+
     #ax.set_ylim([0,3])
     ax.set_rticks([1, 2, 3, 4, 5])  # Less radial ticks
     ax.set_rlim(bottom=5, top=0)
@@ -99,7 +102,7 @@ def polar_plot(time_decomp: pd.DataFrame, output_file: Path, time_str: str):
 @click.argument('hours', type=int)
 @click.argument('minutes', type=int)
 @click.argument('seconds', type=int)
-@click.option('--image', '-i', default=Path('prime_time.png'), help='Generate polar plot of prime decomposition', type=Path)
+@click.option('--image', '-i', default=Path('prime_time.svg'), help='Generate polar plot of prime decomposition', type=Path)
 def cli(hours: int, minutes: int, seconds: int, image: Path):
     """Take a time in hours, minutes and seconds and print a prime decomposition of the numbers.
     Also make a polar plot to visualize and save it to disk.

@@ -4,6 +4,7 @@ import click
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import gif
 
 from typing import Dict
 from pathlib import Path
@@ -44,12 +45,12 @@ def cache_factorization(cache_file_path: Path) -> None:
     factors.to_csv(cache_file_path, index=False)
     return
 
-def polar_plot(time_decomp: pd.DataFrame, output_file: Path, time_str: str):
-    """Generate a polar plot of the time decomposition and save it as PNG
+@gif.frame
+def polar_plot(time_decomp: pd.DataFrame, time_str: str):
+    """Generate a polar plot of the time decomposition and reutrn it as matplotlib figure
 
     Args:
         time_decomp (pd.DataFrame): A DF with a row for each decomposed number, the columns all potential factors
-        output_file (Path): File to save polar plot to
     """
     num_prime_factors = len(potential_factors)
     theta = (2 * np.pi) * np.linspace(1 + 0.25,  0.25, num_prime_factors, endpoint=False) # Distribute theta evenly over all prime factors, and start from top of circle clockwise
@@ -93,17 +94,19 @@ def polar_plot(time_decomp: pd.DataFrame, output_file: Path, time_str: str):
     ax.set_title(f"Prime number decomposition plot at {time_str}", va='bottom')
     legend_angle = np.deg2rad(67.5)
     ax.legend(loc="upper left", bbox_to_anchor=(.8 + np.cos(legend_angle)/2, .5 + np.sin(legend_angle)/2))
-    plt.savefig(output_file)
+    finalized_plot = ax.get_figure()
+    return finalized_plot
 
-    logging.info("Saved output plot to file")
-    return
+#@gif.frame
+#polar_plot_gif(time_decomp: pd.DataFrame, time_str: str):
+
 
 @click.command()
 @click.argument('hours', type=int)
 @click.argument('minutes', type=int)
 @click.argument('seconds', type=int)
-@click.option('--image', '-i', default=Path('prime_time.svg'), help='Generate polar plot of prime decomposition', type=Path)
-def cli(hours: int, minutes: int, seconds: int, image: Path):
+@click.option('--output_image', '-o', default=Path('prime_time.svg'), help='Generate polar plot of prime decomposition', type=Path)
+def cli(hours: int, minutes: int, seconds: int, output_image: Path):
     """Take a time in hours, minutes and seconds and print a prime decomposition of the numbers.
     Also make a polar plot to visualize and save it to disk.
 
@@ -111,7 +114,7 @@ def cli(hours: int, minutes: int, seconds: int, image: Path):
         hours (int): Hour hand
         minutes (int): Minute hand
         seconds (int): Second hand
-        image (Path): Output plot path
+        output_image (Path): Output plot path
     """
 
     if refresh_cache == True:
@@ -126,20 +129,39 @@ def cli(hours: int, minutes: int, seconds: int, image: Path):
     if hours == 0 and minutes == 0 and seconds == 0:
         cur_datetime = datetime.datetime.now()
         hours, minutes, seconds = int(cur_datetime.hour), int(cur_datetime.minute), int(cur_datetime.second)
-
     # Replace zeroes with the highest number (24 or 60) so we still have prime decompositions:
-    # 1 will be then a unque number without factors
+    # 1 will be then a unique number without factors
     hours = 24 if hours==0 else hours
     minutes = 60 if minutes==0 else minutes
     seconds = 60 if seconds==0 else seconds
     time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-    logging.info(f"Decomposing time {time_str}")
-    prime_time = decomp_lookup.iloc[[hours, minutes, seconds]] #lookup prime decompositions of H:M:S
-    print(f"Prime Time:\n{prime_time}")
+    if str(output_image).split('.')[-1] == 'gif': # when we want to make a gif, loop through the plot
+        gif_num_frames = 10 # How many frames to plot in the gif
+        frames = []
+        for f in range(gif_num_frames):
+            prime_time = decomp_lookup.iloc[[hours, minutes, seconds]] #lookup prime decompositions of H:M:S
+            frames.append(polar_plot(time_decomp=prime_time, time_str=time_str))
+            seconds += 1 # Increase time by 1 second and wrap around:
+            if seconds > 60:
+                seconds -= 60
+                minutes += 1
+            if minutes > 60:
+                minutes -= 60
+                hours += 1
+            if hours > 24:
+                hours -= 24
+            time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        gif.save(frames, output_image, duration=1000)
+    else:  
+        logging.info(f"Decomposing time {time_str}")
+        prime_time = decomp_lookup.iloc[[hours, minutes, seconds]] #lookup prime decompositions of H:M:S
+        logging.info(f"Prime Time:\n{prime_time}")
 
-    logging.info("Making time polar plot")
-    polar_plot(time_decomp=prime_time, output_file=image, time_str=time_str)
+        logging.info("Making time polar plot")
+        finished_plot_figure = polar_plot(time_decomp=prime_time, time_str=time_str)
+        finished_plot_figure.savefig(output_image)
+        logging.info("Saved output plot to file")
     return
 
 

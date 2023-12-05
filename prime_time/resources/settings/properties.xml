@@ -1,0 +1,6 @@
+<properties>
+
+    <property id="LowPowerHand" type="number">1</property>
+    <property id="HighPowerHand" type="number">2</property>
+
+</properties>

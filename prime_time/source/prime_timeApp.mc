@@ -21,6 +21,11 @@ class prime_timeApp extends Application.AppBase {
         return [ new prime_timeView() ] as Array<Views or InputDelegates>;
     }
 
+    // New app settings have been received so trigger a UI update
+    function onSettingsChanged() as Void {
+        WatchUi.requestUpdate();
+    }
+
 }
 
 function getApp() as prime_timeApp {

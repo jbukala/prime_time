@@ -1,3 +1,9 @@
 <strings>
     <string id="AppName">Prime Time</string>
+    <string id="LowPowerHandTitle">Low-Power Hand</string>
+    <string id="HighPowerHandTitle">High-Power Hand</string>
+
+    <string id="Hours">Hours</string>
+    <string id="Minutes">Minutes</string>
+    <string id="Seconds">Seconds</string>
 </strings>

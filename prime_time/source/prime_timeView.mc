@@ -1,3 +1,5 @@
+import Toybox.Application;
+
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
@@ -94,7 +96,7 @@ class prime_timeView extends WatchUi.WatchFace {
     var centerY;
 
     var usedPrimes; // the indices of the primes used in plotting at this time
-    var displayHand = DISPLAY_SECONDS; // Start out in high-power mode so show seconds
+    var displayHand = Properties.getValue("HighPowerHand") as Number; // Start out in high-power mode
 
     function initialize() {
         WatchFace.initialize();
@@ -170,12 +172,12 @@ class prime_timeView extends WatchUi.WatchFace {
 
     // The user has just looked at their watch. Timers and animations may be started here.
     function onExitSleep() as Void {
-        displayHand = DISPLAY_SECONDS;
+        displayHand = Properties.getValue("HighPowerHand") as Number;
     }
 
     // Terminate any active timers and prepare for slow updates.
     function onEnterSleep() as Void {
-        displayHand = DISPLAY_MINUTES;
+        displayHand = Properties.getValue("LowPowerHand") as Number;
     }
 
     // Draw a filled polygon at angle theta 

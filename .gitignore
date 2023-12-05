@@ -1,8 +1,8 @@
 
-# Gamrin watchface app
+# Garmin watchface app
 developer_key
 prime_time/bin
-
+!prime_time/bin/*.prg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

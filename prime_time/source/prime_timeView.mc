@@ -77,15 +77,24 @@ class prime_timeView extends WatchUi.WatchFace {
         // Do up to 60 later to do minutes as well
     ];
 
+    enum {
+        DISPLAY_HOURS,
+        DISPLAY_MINUTES,
+        DISPLAY_SECONDS
+    }
+
     // More general numbers to aid in plotting
     var maxNumHands = primes.size(); // we need 17 prime numbers in total
     var maxExponents = 5; // Highest amount of prime exponents needed
 
     var screenWidth;
     var screenHeight;
-    var radius;
-    var centerX;
+    var diskRadius; // Radius of the watch
+    var centerX; // Center coords of the watch (not necessarily center of screen)
     var centerY;
+
+    var usedPrimes; // the indices of the primes used in plotting at this time
+    var displayHand = DISPLAY_SECONDS; // Start out in high-power mode so show seconds
 
     function initialize() {
         WatchFace.initialize();
@@ -107,9 +116,11 @@ class prime_timeView extends WatchUi.WatchFace {
         // Set screen size vars
         screenWidth = dc.getWidth();
         screenHeight = dc.getHeight();
-        radius = screenHeight>>1;
+        diskRadius = screenHeight>>1;
         centerX = screenWidth>>1;
         centerY = screenHeight>>1;
+
+        usedPrimes = []; // Reset list of prime numbers used in this plot
         
         // Clear the entire screen
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_WHITE);
@@ -127,10 +138,28 @@ class prime_timeView extends WatchUi.WatchFace {
         if (clockMin == 0) {clockMin = 60;}
         if (clockSec == 0) {clockSec = 60;}
 
-        // Plot Hours and Minutes:
-        //drawAllHands(dc, clockHour);
-        drawAllHands(dc, clockMin);
-        //drawAllHands(dc, clockSec);
+        // Plot Hours, Minutes or Seconds (depending on power state?)
+        switch (displayHand) {
+            case DISPLAY_HOURS:
+                drawAllHands(dc, clockHour);
+            break;
+            case DISPLAY_MINUTES:
+                drawAllHands(dc, clockMin);
+            break;
+            case DISPLAY_SECONDS:
+                drawAllHands(dc, clockSec);
+            break;
+            default:
+                System.println("No display setting matched!");
+            break;
+        }
+
+        // Draw circles to count factors with
+        drawUnitCircles(dc);
+
+        // Draw the legend for each used prime number
+        drawHandLegend(dc);
+
     }
 
     // Called when this View is removed from the screen. Save the
@@ -141,10 +170,12 @@ class prime_timeView extends WatchUi.WatchFace {
 
     // The user has just looked at their watch. Timers and animations may be started here.
     function onExitSleep() as Void {
+        displayHand = DISPLAY_SECONDS;
     }
 
     // Terminate any active timers and prepare for slow updates.
     function onEnterSleep() as Void {
+        displayHand = DISPLAY_MINUTES;
     }
 
     // Draw a filled polygon at angle theta 
@@ -166,15 +197,14 @@ class prime_timeView extends WatchUi.WatchFace {
     function drawHand(dc, theta, length) {
         var barWidth = 8.0;
 
-        var pts = [[-barWidth, -radius], [barWidth, -radius], [0.0, -(1-length) * radius]]; // TODO
+        var pts = [[0.0, -(1-length) * diskRadius], [-barWidth, -diskRadius], [barWidth, -diskRadius]];
         fillPolygon(dc, centerX, centerY, theta, pts);
     }
 
     // Take the dc & hours/minutes/seconds hand number, and plot it
     function drawAllHands(dc, handNumber) {
-        System.println(handNumber);
         var handNumberDecomposition = primeDecompositions[handNumber];
-        System.println(handNumberDecomposition);
+
         var primeFactors = handNumberDecomposition.keys();
         for (var i = 0; i < handNumberDecomposition.size(); ++i) {
             var primeNumber = primeFactors[i];
@@ -184,29 +214,42 @@ class prime_timeView extends WatchUi.WatchFace {
             var theta = primeIdx * 2.0 * Math.PI / maxNumHands;
             var length = primeExponent * 1.0/maxExponents;
             drawHand(dc, theta, length);
-            drawHandLegend(dc, theta, primeNumber.format("%2d"));
+            usedPrimes = usedPrimes.add(primeIdx); // this prime number is used, plot its legend later
         }
     }
 
-    // Draw for each used prime factor the legend to the polygon as well
-    function drawHandLegend(dc, theta, legendString){
-        var sin = Math.sin(theta);
-        var cos = Math.cos(theta);
+    // Draw for each used prime factor the legend to the polygon as well indicating the number
+    function drawHandLegend(dc){
+        for (var i = 0; i < usedPrimes.size(); ++i) {
+            var primeIdx = usedPrimes[i];
+            var primeNumberText = primes[primeIdx].format("%2d");
+            var theta = primeIdx * 2.0 * Math.PI / maxNumHands;
 
-        var x = radius * sin + centerX;
-        var y = -radius * cos + centerY;
+            var sin = Math.sin(theta);
+            var cos = Math.cos(theta);
 
+            var x = 0.3 * diskRadius * sin + centerX;
+            var y = - 0.3 * diskRadius * cos + centerY;
 
-        var legendText = new WatchUi.Text({
-            :text=> legendString,
-            :color=>Graphics.COLOR_LT_GRAY,
-            :font=>Graphics.FONT_SMALL,
-            :justification=>Graphics.TEXT_JUSTIFY_CENTER,
-            :locX => x,
-            :locY=> y
-        });
-        legendText.draw(dc);
+            var legendText = new WatchUi.Text({
+                :text=> primeNumberText,
+                :color=>Graphics.COLOR_WHITE,
+                :font=>Graphics.FONT_SMALL,
+                :justification=>Graphics.TEXT_JUSTIFY_CENTER,
+                :locX => x,
+                :locY=> y
+            });
+            legendText.draw(dc);
+        }
     }
 
+    // Draw circles around to center in black on top of the hands to count exponents with
+    function drawUnitCircles(dc){
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_WHITE);
+        for (var i = 1; i < maxExponents; ++i) {
+            dc.drawCircle(centerX, centerY, i * diskRadius/maxExponents);
+        } 
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+    }
 
 }

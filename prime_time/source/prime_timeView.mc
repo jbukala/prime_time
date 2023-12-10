@@ -91,9 +91,15 @@ class prime_timeView extends WatchUi.WatchFace {
 
     var screenWidth;
     var screenHeight;
-    var diskRadius; // Radius of the watch
-    var centerX; // Center coords of the watch (not necessarily center of screen)
-    var centerY;
+
+    var centerX = 64; // Center coords of the main watch circle (not necessarily center of screen)
+    var centerY = 91;
+    var diskRadius = 58;
+    var MiniDiskCenterX = 135; // Center coords of the mini circle in the top right
+    var MiniDiskCenterY = 27;
+    var MiniDiskRadius = 23;
+
+    var MAX_HOURS = 12; // Is it 12h or 24h system. Make this a configurable setting?
 
     var usedPrimes; // the indices of the primes used in plotting at this time
     var displayHand = Properties.getValue("HighPowerHand") as Number; // Start out in high-power mode
@@ -115,12 +121,15 @@ class prime_timeView extends WatchUi.WatchFace {
 
     // Update the view
     function onUpdate(dc as Dc) as Void {
-        // Set screen size vars
+        
+        // Set screen size vars. Only use if not allowing for mini disk in top right (e.g. for different watch models)
+        /*
         screenWidth = dc.getWidth();
         screenHeight = dc.getHeight();
         diskRadius = screenHeight>>1;
         centerX = screenWidth>>1;
         centerY = screenHeight>>1;
+        */
 
         usedPrimes = []; // Reset list of prime numbers used in this plot
         
@@ -129,14 +138,14 @@ class prime_timeView extends WatchUi.WatchFace {
         dc.fillRectangle(0, 0, dc.getWidth(), dc.getHeight());
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
 
-        // Get and show the current time
+        // Get the current time
         var clockTime = System.getClockTime();
-        var clockHour = clockTime.hour;
+        var clockHour = clockTime.hour % MAX_HOURS;
         var clockMin = clockTime.min;
         var clockSec = clockTime.sec;
 
         // Make correction: wrap around zeroes
-        if (clockHour == 0) {clockHour = 60;}
+        if (clockHour == 0) {clockHour = MAX_HOURS;}
         if (clockMin == 0) {clockMin = 60;}
         if (clockSec == 0) {clockSec = 60;}
 
@@ -156,12 +165,17 @@ class prime_timeView extends WatchUi.WatchFace {
             break;
         }
 
-        // Draw circles to count factors with
+        // Draw (negative) circles to count factors with
         drawUnitCircles(dc);
+
+        // Draw circle around main watch face:
+        dc.drawCircle(centerX, centerY, diskRadius);
 
         // Draw the legend for each used prime number
         drawHandLegend(dc);
 
+        // Draw hours to little circle on the top right
+        drawMiniCircle(dc, clockHour);
     }
 
     // Called when this View is removed from the screen. Save the
@@ -252,6 +266,23 @@ class prime_timeView extends WatchUi.WatchFace {
             dc.drawCircle(centerX, centerY, i * diskRadius/maxExponents);
         } 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+    }
+
+    // Take the mini circle in the top right and draw the hours as the arc of a circle inside of it
+    function drawMiniCircle(dc, clockHour){
+        dc.drawArc(MiniDiskCenterX, MiniDiskCenterY, MiniDiskRadius, 
+        Graphics.ARC_CLOCKWISE, 90.0, 90.0 - clockHour * (360.0/MAX_HOURS));
+
+        // Also draw hours in the centre
+        var hoursLegendText = new WatchUi.Text({
+                :text=> clockHour.format("%2d"),
+                :color=>Graphics.COLOR_WHITE,
+                :font=>Graphics.FONT_SMALL,
+                :justification=>Graphics.TEXT_JUSTIFY_CENTER,
+                :locX => MiniDiskCenterX,
+                :locY=> MiniDiskCenterY-10
+            });
+        hoursLegendText.draw(dc);
     }
 
 }

@@ -1,3 +1,10 @@
 <drawables>
     <bitmap id="LauncherIcon" filename="launcher_icon.png" />
+
+    <drawable-list id="mainFace" background="Graphics.COLOR_BLACK">
+        <shape type="rectangle" x="39%" y="58%" width="36%" height="0%" color="Graphics.COLOR_WHITE"/>
+    </drawable-list>
+    <drawable-list id="hoursFace" background="Graphics.COLOR_BLACK">
+        <shape type="rectangle" x="83%" y="17%" width="14%" height="0%" color="Graphics.COLOR_WHITE"/>
+    </drawable-list>
 </drawables>

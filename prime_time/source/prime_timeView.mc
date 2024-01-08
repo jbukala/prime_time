@@ -110,7 +110,9 @@ class prime_timeView extends WatchUi.WatchFace {
 
     // Load your resources here
     function onLayout(dc as Dc) as Void {
-        //setLayout(Rez.Layouts.WatchFace(dc));
+        setLayout(Rez.Layouts.WatchFace(dc));
+
+        System.println("x center of main face: " + self.findDrawableById("mainFace").x);
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -123,13 +125,35 @@ class prime_timeView extends WatchUi.WatchFace {
     function onUpdate(dc as Dc) as Void {
         
         // Set screen size vars. Only use if not allowing for mini disk in top right (e.g. for different watch models)
-        /*
+        
         screenWidth = dc.getWidth();
         screenHeight = dc.getHeight();
-        diskRadius = screenHeight>>1;
-        centerX = screenWidth>>1;
-        centerY = screenHeight>>1;
+        diskRadius = 0.3558 * screenWidth; // (58/163)
+        centerX =  0.3926 * screenWidth; // (64/163)
+        centerY =  0.5833 * screenHeight; // (91/156)
+        MiniDiskCenterX =  0.8282 * screenWidth; // Center coords of the mini circle in the top right // (135/163)
+        MiniDiskCenterY =  0.1731 * screenHeight; // (27/156)
+        MiniDiskRadius =  0.1411 * screenWidth; // (23/163)
+        /*
+        TODO: Do watchface layout in separate XML file instead, see:
+        https://forums.garmin.com/developer/connect-iq/f/discussion/255786/layout-for-different-sizes
+        Different layout for round and square watchfaces should solve this, with %-coordinates for each item
+        https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/using-relative-layouts-and-textarea
+        Issue around differing font-sizes per device will remain but that's less important
+
+        Make a separate layout file for round watchfaces, center the main watch face and draw the hours-arc around the entirety of the face
+        This loses the text of the hours but still all info is there
         */
+        
+
+        // on instinct 2S solar (for reference):
+        //Width: 163
+        //Height: 156
+
+        System.println("Width: " + dc.getWidth());
+        System.println("Height: " + dc.getHeight());
+        System.println("CenterX: " + centerX);
+        
 
         usedPrimes = []; // Reset list of prime numbers used in this plot
         
